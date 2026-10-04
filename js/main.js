@@ -1,47 +1,156 @@
-(function(){
-  var burger=document.getElementById('burger'), nav=document.getElementById('nav');
-  function setNav(open){nav.classList.toggle('open',open);burger.setAttribute('aria-expanded',open);burger.setAttribute('aria-label',open?'Close menu':'Open menu');}
-  burger.addEventListener('click',function(){setNav(!nav.classList.contains('open'));});
-  nav.addEventListener('click',function(e){if(e.target.closest('a'))setNav(false);});
+(() => {
+  // Mobile navigation
+  const burger = document.getElementById("burger");
+  const nav = document.getElementById("nav");
 
-  // scroll spy
-  var links={};nav.querySelectorAll('a.l').forEach(function(a){links[a.dataset.s]=a;});
-  var ids=['about','services','locations','opportunities','contact'];
-  function spy(){
-    var y=window.scrollY+140,cur='top';
-    ids.forEach(function(id){var el=document.getElementById(id);if(el&&el.offsetTop<=y)cur=id;});
-    Object.keys(links).forEach(function(k){links[k].classList.toggle('on',k===cur);});
-  }
-  window.addEventListener('scroll',spy,{passive:true});spy();
+  const setNav = (open) => {
+    nav.classList.toggle("open", open);
+    burger.setAttribute("aria-expanded", String(open));
+    burger.setAttribute("aria-label", open ? "Close menu" : "Open menu");
+  };
 
-  // prefill contact form from buttons
-  var role=document.getElementById('f-role'), svc=document.getElementById('f-service');
-  document.querySelectorAll('[data-role]').forEach(function(a){a.addEventListener('click',function(){role.value=a.dataset.role;});});
-  document.querySelectorAll('[data-service]').forEach(function(a){a.addEventListener('click',function(){
-    role.value='Employer';
-    for(var i=0;i<svc.options.length;i++){if(svc.options[i].text===a.dataset.service){svc.selectedIndex=i;break;}}
-  });});
-
-  // map <-> list highlight
-  var rows=document.querySelectorAll('.loc[data-c]');
-  rows.forEach(function(r){
-    var p=document.getElementById('c-'+r.dataset.c);
-    function on(){if(p)p.classList.add('hl');}
-    function off(){if(p)p.classList.remove('hl');}
-    r.addEventListener('mouseenter',on);r.addEventListener('mouseleave',off);
-    r.addEventListener('focus',on);r.addEventListener('blur',off);
+  burger.addEventListener("click", () => {
+    setNav(!nav.classList.contains("open"));
   });
 
-  // contact form -> opens the visitor's email app with the message ready
-  var form=document.getElementById('cform'), status=document.getElementById('status');
-  form.addEventListener('submit',function(e){
-    e.preventDefault();
-    var d=new FormData(form), name=(d.get('name')||'').trim(), email=(d.get('email')||'').trim();
-    if(!name||!email||email.indexOf('@')<1){status.textContent='Please add your name and a valid email so we can reply.';return;}
-    var subject='Enquiry from '+name+' ('+d.get('role')+')';
-    var body='Name: '+name+'\nEmail: '+email+'\nPhone: '+(d.get('phone')||'-')+'\nI am a: '+d.get('role')+'\nService of interest: '+(d.get('service')||'Not sure yet')+'\n\n'+(d.get('msg')||'');
-    var href='mailto:info@teampowerglobal.com?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
-    status.innerHTML='Your email app is opening with the message ready. If nothing opens, <a href="'+href+'">use this link</a> or write to info@teampowerglobal.com.';
-    window.location.href=href;
+  nav.addEventListener("click", (event) => {
+    if (event.target.closest("a")) {
+      setNav(false);
+    }
+  });
+
+  // Scroll spy
+  const links = {};
+
+  nav.querySelectorAll("a.l").forEach((link) => {
+    links[link.dataset.s] = link;
+  });
+
+  const sectionIds = [
+    "about",
+    "services",
+    "locations",
+    "opportunities",
+    "contact",
+  ];
+
+  const updateScrollSpy = () => {
+    const scrollPosition = window.scrollY + 140;
+    let currentSection = "top";
+
+    sectionIds.forEach((id) => {
+      const section = document.getElementById(id);
+
+      if (section && section.offsetTop <= scrollPosition) {
+        currentSection = id;
+      }
+    });
+
+    Object.keys(links).forEach((key) => {
+      links[key].classList.toggle("on", key === currentSection);
+    });
+  };
+
+  window.addEventListener("scroll", updateScrollSpy, {
+    passive: true,
+  });
+
+  updateScrollSpy();
+
+  // Prefill contact form from buttons
+  const role = document.getElementById("f-role");
+  const service = document.getElementById("f-service");
+
+  document.querySelectorAll("[data-role]").forEach((button) => {
+    button.addEventListener("click", () => {
+      role.value = button.dataset.role;
+    });
+  });
+
+  document.querySelectorAll("[data-service]").forEach((button) => {
+    button.addEventListener("click", () => {
+      role.value = "Employer";
+
+      for (let index = 0; index < service.options.length; index += 1) {
+        if (service.options[index].text === button.dataset.service) {
+          service.selectedIndex = index;
+          break;
+        }
+      }
+    });
+  });
+
+  // Map <-> list highlight
+  const locationRows = document.querySelectorAll(".loc[data-c]");
+
+  locationRows.forEach((row) => {
+    const pin = document.getElementById(`c-${row.dataset.c}`);
+
+    const highlight = () => {
+      if (pin) {
+        pin.classList.add("hl");
+      }
+    };
+
+    const removeHighlight = () => {
+      if (pin) {
+        pin.classList.remove("hl");
+      }
+    };
+
+    row.addEventListener("mouseenter", highlight);
+    row.addEventListener("mouseleave", removeHighlight);
+    row.addEventListener("focus", highlight);
+    row.addEventListener("blur", removeHighlight);
+  });
+
+  // Contact form -> Web3Forms
+  const form = document.getElementById("cform");
+  const status = document.getElementById("status");
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const formData = new FormData(form);
+    const name = (formData.get("name") || "").trim();
+    const email = (formData.get("email") || "").trim();
+
+    // Basic validation
+    if (!name || !email || !email.includes("@")) {
+      status.textContent =
+        "Please add your name and a valid email so we can reply.";
+      return;
+    }
+
+    status.textContent = "Sending...";
+
+    try {
+      const response = await fetch("https://api.web3forms.com/submit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(Object.fromEntries(formData)),
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        status.textContent =
+          "Thank you. Your message has been sent successfully.";
+
+        form.reset();
+        return;
+      }
+
+      status.textContent =
+        result.message || "Something went wrong. Please try again.";
+    } catch (error) {
+      console.error("Contact form error:", error);
+
+      status.textContent =
+        "Unable to send your message right now. Please try again.";
+    }
   });
 })();
